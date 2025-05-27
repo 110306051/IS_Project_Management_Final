@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 class MessageInput extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
-  final VoidCallback onListen;
+  // final VoidCallback onListen;
   final bool isListening;
 
   const MessageInput({
     required this.controller,
     required this.onSend,
-    required this.onListen,
+    // required this.onListen,
     required this.isListening,
     super.key,
   });
@@ -47,13 +47,13 @@ class MessageInput extends StatelessWidget {
             ),
           ),
         ),
-        IconButton(
-          icon: Icon(
-            isListening ? Icons.mic : Icons.mic_none,
-            color: isListening ? Colors.red : Colors.white,
-          ),
-          onPressed: onListen,
-        ),
+        // IconButton(
+        //   icon: Icon(
+        //     isListening ? Icons.mic : Icons.mic_none,
+        //     color: isListening ? Colors.red : Colors.white,
+        //   ),
+        //   // onPressed: onListen,
+        // ),
         IconButton(
           icon: const Icon(Icons.send),
           onPressed: onSend,

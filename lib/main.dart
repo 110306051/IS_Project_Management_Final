@@ -141,6 +141,7 @@ class MyApp extends StatelessWidget {
       home: const ChatPage(
         name: 'Jeremy', // 聊天室名稱
         avatar: 'assets/images/me.jpg',
+        chatroomId: 'chatroom_01', // 聊天室 ID
       ), // 啟動 ChatPage 作為主頁面
     );
   }

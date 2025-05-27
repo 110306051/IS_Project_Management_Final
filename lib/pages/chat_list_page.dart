@@ -11,6 +11,7 @@ class ChatListPage extends StatelessWidget {
       'avatar': 'assets/images/me.jpg',
       'lastMessage': 'Eat my ass？',
       'time': '3:10',
+      'chatroomId': 'chatroom_01',
     },
     {
       'name': 'Sheng Hong',
@@ -163,6 +164,9 @@ class ChatListPage extends StatelessWidget {
                                     (context) => ChatPage(
                                       name: chat['name'],
                                       avatar: chat['avatar'],
+                                      chatroomId:
+                                          chat['chatroomId'] ??
+                                          'default_chatroom',
                                     ),
                               ),
                             );
@@ -208,6 +212,9 @@ class ChatListPage extends StatelessWidget {
                                       (context) => ChatPage(
                                         name: chat['name'],
                                         avatar: chat['avatar'],
+                                        chatroomId:
+                                            chat['chatroomId'] ??
+                                            'default_chatroom',
                                       ),
                                 ),
                               );

@@ -3,14 +3,22 @@ import '../models/message.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_input.dart';
 import 'chat_list_page.dart';
+import '../services/socket_service.dart';
+import 'dart:async';
 
 // import 'package:intl/intl.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
+// import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class ChatPage extends StatefulWidget {
   final String name;
+  final String chatroomId;
   final String avatar;
-  const ChatPage({super.key, required this.name, required this.avatar});
+  const ChatPage({
+    super.key,
+    required this.name,
+    required this.avatar,
+    required this.chatroomId,
+  });
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -18,81 +26,90 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final List<Message> _messages = [];
+  final SocketService socketService =
+      SocketService(); //* SocketService 用來處理 WebSocket 連線
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  late stt.SpeechToText _speech;
+  // late stt.SpeechToText _speech;
   bool _isListening = false;
 
+  //! initState
   @override
   void initState() {
     super.initState();
-    _speech = stt.SpeechToText();
-    _speech.initialize(
-      onStatus: (val) => print('🎙️ onStatus: $val'),
-      onError: (val) => print('❌ onError: $val'),
-    );
+    // _speech = stt.SpeechToText();
+    // _speech.initialize(
+    // );
+    socketService.connect('Me');
+    socketService.onReceiveMessage((data) {
+      final message = Message.fromJson(data, 'Me');
+      setState(() {
+        _messages.add(message);
+      });
+      _scrollToBottom();
+    });
   }
 
-  void _listen() async {
-    if (!_isListening) {
-      bool available = await _speech.initialize(
-        onStatus: (val) => print('onStatus: $val'),
-        onError: (val) => print('onError: $val'),
-      );
+  // void _listen() async {
+  //   if (!_isListening) {
+  //     bool available = await _speech.initialize(
+  //       onStatus: (val) => print('onStatus: $val'),
+  //       onError: (val) => print('onError: $val'),
+  //     );
 
-      if (available) {
-        setState(() => _isListening = true);
+  //     if (available) {
+  //       setState(() => _isListening = true);
 
-        _speech.listen(
-          onResult:
-              (val) => setState(() {
-                _inputController.text = val.recognizedWords;
-                _inputController.selection = TextSelection.fromPosition(
-                  TextPosition(offset: _inputController.text.length),
-                );
-              }),
-          localeId: 'zh-TW', // 可改 'en-US'
-        );
-      }
-    } else {
-      setState(() => _isListening = false);
-      _speech.stop();
-    }
-  }
+  //       _speech.listen(
+  //         onResult:
+  //             (val) => setState(() {
+  //               _inputController.text = val.recognizedWords;
+  //               _inputController.selection = TextSelection.fromPosition(
+  //                 TextPosition(offset: _inputController.text.length),
+  //               );
+  //             }),
+  //         localeId: 'zh-TW', // 可改 'en-US'
+  //       );
+  //     }
+  //   } else {
+  //     setState(() => _isListening = false);
+  //     _speech.stop();
+  //   }
+  // }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     if (_inputController.text.trim().isEmpty) return;
 
+    final text = _inputController.text.trim();
+
+    final messagePayload = {
+      'chatroom_id': widget.chatroomId,
+      'sender_id': 'Me', // 假設發送者是自己
+      'receiver_id': widget.name, // 對方的 ID
+      'text': text,
+      'sender_lang': 'zh-TW',
+      'receiver_lang': 'en',
+    };
+
     final message = Message(
-      sender: '我',
-      text: _inputController.text.trim(),
+      sender: 'Me',
+      receiver: widget.name,
+      chatroomId: widget.chatroomId, // 假設有一個聊天房間ID
+      text: text,
       timestamp: DateTime.now(),
       isMe: true,
     );
 
-    setState(() {
-      _messages.add(message);
-    });
+    // setState(() {
+    //   _messages.add(message);
+    // });
 
+    socketService.sendMessage(messagePayload);
+
+    // 清空輸入框
     _inputController.clear();
-
-    _scrollToBottom(); // 直接呼叫
-
-    // 模擬對方回覆
-    Future.delayed(Duration(seconds: 2), () {
-      setState(() {
-        _messages.add(
-          Message(
-            sender: '對方',
-            text: 'I am fine, thank you!',
-            timestamp: DateTime.now(),
-            isMe: false,
-          ),
-        );
-      });
-      _scrollToBottom();
-    });
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -106,11 +123,6 @@ class _ChatPageState extends State<ChatPage> {
       }
     });
   }
-
-  // String _formatToday() {
-  //   final now = DateTime.now();
-  //   return ' ${now.year}年 ${now.month}月${now.day}日';
-  // }
 
   String _formatDateLabel(DateTime date) {
     final now = DateTime.now();
@@ -274,7 +286,7 @@ class _ChatPageState extends State<ChatPage> {
               child: MessageInput(
                 controller: _inputController,
                 onSend: _sendMessage,
-                onListen: _listen,
+                // onListen: _listen,
                 isListening: _isListening,
               ),
             ),
