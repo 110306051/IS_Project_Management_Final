@@ -10,12 +10,12 @@ class MessageBubble extends StatelessWidget {
   final String avatar;
 
   const MessageBubble({
-    Key? key,
+    super.key,
     required this.message,
     required this.showTime,
     required this.showAvatar,
     required this.avatar,
-  }) : super(key: key);
+  });
 
   String _formatTime(DateTime time) {
     final hour = time.hour;

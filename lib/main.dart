@@ -120,10 +120,16 @@
 //     );
 //   }
 // }
+// main.dart
+// lib/main.dart
+// lib/main.dart
 import 'package:flutter/material.dart';
+import 'pages/login_page.dart';
+import 'pages/register_page.dart';
 import 'pages/chat_page.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -138,11 +144,16 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const ChatPage(
-        name: 'Jeremy', // 聊天室名稱
-        avatar: 'assets/images/me.jpg',
-        chatroomId: 'chatroom_01', // 聊天室 ID
-      ), // 啟動 ChatPage 作為主頁面
+      initialRoute: '/login',
+      routes: {
+        '/login': (_) => const LoginPage(),
+        '/register': (_) => const RegisterPage(),
+        '/chatList': (_) => const ChatPage(
+              name: 'Jeremy',
+              avatar: 'assets/images/me.jpg',
+              chatroomId: 'chatroom_01',
+            ),
+      },
     );
   }
 }

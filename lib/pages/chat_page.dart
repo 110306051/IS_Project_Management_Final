@@ -101,9 +101,9 @@ class _ChatPageState extends State<ChatPage> {
       isMe: true,
     );
 
-    // setState(() {
-    //   _messages.add(message);
-    // });
+    setState(() {
+      _messages.add(message);
+    });
 
     socketService.sendMessage(messagePayload);
 

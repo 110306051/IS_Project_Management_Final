@@ -4,7 +4,7 @@ class SocketService {
   late IO.Socket socket;
 
   void connect(String userId) {
-    socket = IO.io('http://192.168.66.21:8000', <String, dynamic>{
+    socket = IO.io('http://10.0.2.2:8000', <String, dynamic>{
       'transports': ['websocket'],
       'query': {'user_id': userId},
     });
