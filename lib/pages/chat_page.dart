@@ -12,11 +12,16 @@ class ChatPage extends StatefulWidget {
   final String name;
   final String chatroomId;
   final String avatar;
+  final String myLanguage;
+  final String otherLanguage;
+
   const ChatPage({
     super.key,
     required this.name,
     required this.avatar,
     required this.chatroomId,
+    required this.myLanguage,
+    required this.otherLanguage,
   });
 
   @override
@@ -29,7 +34,7 @@ class _ChatPageState extends State<ChatPage> {
 
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final username = ApiService.globalUsername;
+  // final username = ApiService.globalUsername;
 
   bool _isListening = false;
 
@@ -38,12 +43,15 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
 
+    fetchMessages();
+
     TokenService.getUsername().then((value) {
       if (value != null) {
         socketService.onReceiveMessage((data) {
           final message = Message.fromJson(data, value);
           setState(() {
             _messages.add(message);
+            _scrollToBottom();
           });
           _scrollToBottom();
         });
@@ -51,12 +59,45 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
+  //! _receiveMessage
+  Future<void> fetchMessages() async {
+    final messages = await ApiService.fetchMessages(
+      username: ApiService.globalUsername,
+      chatroomId: widget.chatroomId,
+    );
+
+    setState(() {
+      _messages.clear();
+      _messages.addAll(messages);
+    });
+
+    // 等 ListView rebuild 完成再捲動
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
+    // 50ms後再補一次，確保render完成
+    Future.delayed(Duration(milliseconds: 300), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+    // Future.delayed(Duration(milliseconds: 500), () {
+    //   _scrollToBottom();
+    // });
+  }
+
+  //! dispose
   @override
   void dispose() {
     socketService.socket.off('receive_message'); // 這樣離開時會移除 listener
     super.dispose();
   }
 
+  //! _sendMessage
   void _sendMessage() async {
     if (_inputController.text.trim().isEmpty) return;
 
@@ -64,27 +105,12 @@ class _ChatPageState extends State<ChatPage> {
 
     final messagePayload = {
       'chatroom_id': widget.chatroomId,
-      'sender_id': username, // 假設發送者是自己
+      'sender_id': ApiService.globalUsername, // 假設發送者是自己
       'receiver_id': widget.name, // 對方的 ID
       'text': text,
-      'sender_lang': 'zh-TW',
-      'receiver_lang': 'en',
+      'sender_lang': widget.myLanguage, // 自己的語言
+      'receiver_lang': widget.otherLanguage, // 對方的語言
     };
-
-    final payloadString = jsonEncode(messagePayload);
-
-    final message = Message(
-      sender: 'Me',
-      receiver: widget.name,
-      chatroomId: widget.chatroomId, // 假設有一個聊天房間ID
-      text: text,
-      timestamp: DateTime.now(),
-      isMe: true,
-    );
-
-    setState(() {
-      _messages.add(message);
-    });
 
     socketService.sendMessage(messagePayload);
 
@@ -93,18 +119,18 @@ class _ChatPageState extends State<ChatPage> {
     _scrollToBottom();
   }
 
+  //! _scrollToBottom
   void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent + 1000,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
+  //! _formatDateLabel
   String _formatDateLabel(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -135,6 +161,7 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  //! build
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -251,6 +278,7 @@ class _ChatPageState extends State<ChatPage> {
                             showTime: showTime,
                             showAvatar: showAvatar,
                             avatar: widget.avatar,
+                            myLanguage: widget.myLanguage,
                           );
                         },
                         separatorBuilder:

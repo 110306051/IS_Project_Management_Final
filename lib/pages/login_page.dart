@@ -20,18 +20,26 @@ class _LoginPageState extends State<LoginPage> {
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請輸入使用者名稱與密碼')),
+        const SnackBar(content: Text('Enter username and password to login.')),
       );
       return;
     }
 
-    setState(() { _loading = true; });
+    setState(() {
+      _loading = true;
+    });
     final success = await ApiService.login(username, password);
-    setState(() { _loading = false; });
+    setState(() {
+      _loading = false;
+    });
 
     if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('登入失敗，請檢查使用者名稱或密碼')),
+        const SnackBar(
+          content: Text(
+            'Login failed. Please check your username and password.',
+          ),
+        ),
       );
       return;
     }
@@ -49,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('登入')),
+      appBar: AppBar(title: const Text('Login')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -61,7 +69,7 @@ class _LoginPageState extends State<LoginPage> {
                 TextField(
                   controller: _usernameCtrl,
                   decoration: const InputDecoration(
-                    labelText: '使用者名稱',
+                    labelText: 'Username',
                     prefixIcon: Icon(Icons.person),
                   ),
                 ),
@@ -69,7 +77,7 @@ class _LoginPageState extends State<LoginPage> {
                 TextField(
                   controller: _pwdCtrl,
                   decoration: const InputDecoration(
-                    labelText: '密碼',
+                    labelText: 'Password',
                     prefixIcon: Icon(Icons.lock),
                   ),
                   obscureText: true,
@@ -78,16 +86,18 @@ class _LoginPageState extends State<LoginPage> {
                 _loading
                     ? const CircularProgressIndicator()
                     : SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _onLoginPressed,
-                          child: const Text('登入'),
-                        ),
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _onLoginPressed,
+                        child: const Text('Login'),
                       ),
+                    ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: () => Navigator.pushReplacementNamed(context, '/register'),
-                  child: const Text('還沒有帳號？前往註冊'),
+                  onPressed:
+                      () =>
+                          Navigator.pushReplacementNamed(context, '/register'),
+                  child: const Text('Don\'t have an account? Register here.'),
                 ),
               ],
             ),

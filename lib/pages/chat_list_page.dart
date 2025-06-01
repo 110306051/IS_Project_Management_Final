@@ -21,17 +21,11 @@ class _ChatListPageState extends State<ChatListPage> {
   void initState() {
     super.initState();
     final socketService = SocketService(); //* SocketService 用來處理 WebSocket 連線
-    TokenService.getUsername().then((value) {
-      if (value != null) {
-        ApiService.globalUsername = value;
-      }
-    });
+
     _fetchChatrooms();
-    TokenService.getUsername().then((value) {
-      if (value != null) {
-        socketService.connect(value);
-      }
-    });
+
+    socketService.connect(ApiService.globalUsername);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final size = MediaQuery.of(context).size;
       setState(() {
@@ -41,20 +35,32 @@ class _ChatListPageState extends State<ChatListPage> {
   }
 
   Future<void> _fetchChatrooms() async {
-    final chatrooms = await ApiService.getChatrooms();
+    final result = await ApiService.getChatrooms();
+    final List<dynamic> chatrooms = result['chatrooms'];
+    final String language = result['language'];
 
+    // final chatrooms = await ApiService.getChatrooms();
     setState(() {
       chatList =
-          chatrooms.map((room) {
+          chatrooms.map<Map<String, dynamic>>((room) {
             return {
               'name': room['with_user'],
               'avatar': 'https://via.placeholder.com/150', // 如果還沒上傳大頭貼，先放預設
               'lastMessage': 'Hi 👋', // 如果沒有 lastMessage，這裡可以先寫死或放空字串
               'time': 'Now', // 同上，或是後端可以回傳最後訊息時間
               'chatroomId': room['chatroom_id'].toString(),
+              'myLanguage': language,
+              'otherLanguage': room['with_user_language'],
             };
           }).toList();
     });
+    // ScaffoldMessenger.of(
+    //   context,
+    // ).showSnackBar(SnackBar(content: Text('${chatList}')));
+  }
+
+  Future<void> _handleRefresh() async {
+    await _fetchChatrooms();
   }
 
   void _showCreateChatroomDialog(BuildContext context) {
@@ -134,37 +140,6 @@ class _ChatListPageState extends State<ChatListPage> {
   //     'time': '3:10',
   //     'chatroomId': 'chatroom_01',
   //   },
-  //   {
-  //     'name': 'Sheng Hong',
-  //     'avatar': 'https://via.placeholder.com/150',
-  //     'lastMessage': 'Im stupid OKC fan.',
-  //     'time': '12:30',
-  //   },
-  //   {
-  //     'name': 'Ming ming',
-  //     'avatar': 'https://via.placeholder.com/150',
-  //     'lastMessage': 'I love to be a military',
-  //     'time': '5:30',
-  //   },
-  //   {
-  //     'name': 'Nana',
-  //     'avatar': 'https://via.placeholder.com/150',
-  //     'lastMessage': 'Nice to meet you',
-  //     'time': '1:15',
-  //   },
-  //   {
-  //     'name': 'KJ Hong',
-  //     'avatar': 'https://via.placeholder.com/150',
-  //     'lastMessage': 'Lets go work out?',
-  //     'time': '10:30',
-  //   },
-  //   {
-  //     'name': '小睿睿',
-  //     'avatar': 'https://via.placeholder.com/150',
-  //     'lastMessage': '湖人總冠軍～',
-  //     'time': '7:00',
-  //   },
-  // ];
 
   @override
   Widget build(BuildContext context) {
@@ -282,38 +257,56 @@ class _ChatListPageState extends State<ChatListPage> {
                           ),
                         ),
                         const SizedBox(height: 20),
-
-                        // Recent Chats 列表（取前 4 筆）
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: chatList.length >= 4 ? 4 : chatList.length,
-                          itemBuilder: (context, index) {
-                            final chat = chatList[index];
-                            return ChatListItem(
-                              name: chat['name'],
-                              avatar: chat['avatar'],
-                              lastMessage: chat['lastMessage'],
-                              time: chat['time'],
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => ChatPage(
-                                          name: chat['name'],
-                                          avatar: chat['avatar'],
-                                          chatroomId:
-                                              chat['chatroomId'] ??
-                                              'default_chatroom',
-                                        ),
+                        RefreshIndicator(
+                          onRefresh: _handleRefresh,
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics: AlwaysScrollableScrollPhysics(),
+                            itemCount:
+                                chatList.isEmpty
+                                    ? 1
+                                    : (chatList.length >= 4
+                                        ? 4
+                                        : chatList.length),
+                            itemBuilder: (context, index) {
+                              if (chatList.isEmpty) {
+                                return Container(
+                                  height: 150,
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'No chats yet. Pull down to refresh.',
+                                    style: TextStyle(color: Colors.grey),
                                   ),
                                 );
-                              },
-                            );
-                          },
-                          separatorBuilder:
-                              (context, index) => const SizedBox(height: 10),
+                              }
+                              final chat = chatList[index];
+                              return ChatListItem(
+                                name: chat['name'],
+                                avatar: chat['avatar'],
+                                lastMessage: chat['lastMessage'],
+                                time: chat['time'],
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) => ChatPage(
+                                            name: chat['name'],
+                                            avatar: chat['avatar'],
+                                            chatroomId:
+                                                chat['chatroomId'] ??
+                                                'default_chatroom',
+                                            myLanguage: chat['myLanguage'],
+                                            otherLanguage:
+                                                chat['otherLanguage'],
+                                          ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                            separatorBuilder: (context, index) => Divider(),
+                          ),
                         ),
 
                         const SizedBox(height: 20),
@@ -334,34 +327,59 @@ class _ChatListPageState extends State<ChatListPage> {
 
                         // All Chats 列表（顯示全部）
                         Expanded(
-                          child: ListView.separated(
-                            itemCount: chatList.length,
-                            itemBuilder: (context, index) {
-                              final chat = chatList[index];
-                              return ChatListItem(
-                                name: chat['name'],
-                                avatar: chat['avatar'],
-                                lastMessage: chat['lastMessage'],
-                                time: chat['time'],
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => ChatPage(
-                                            name: chat['name'],
-                                            avatar: chat['avatar'],
-                                            chatroomId:
-                                                chat['chatroomId'] ??
-                                                'default_chatroom',
+                          child: RefreshIndicator(
+                            onRefresh: _handleRefresh,
+                            child:
+                                chatList.isEmpty
+                                    ? ListView(
+                                      physics: AlwaysScrollableScrollPhysics(),
+                                      children: [
+                                        SizedBox(height: 150),
+                                        Center(
+                                          child: Text(
+                                            'No chats yet. Pull down to refresh.',
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                            ),
                                           ),
+                                        ),
+                                      ],
+                                    )
+                                    : ListView.separated(
+                                      physics: AlwaysScrollableScrollPhysics(),
+                                      itemCount: chatList.length,
+                                      itemBuilder: (context, index) {
+                                        final chat = chatList[index];
+                                        return ChatListItem(
+                                          name: chat['name'],
+                                          avatar: chat['avatar'],
+                                          lastMessage: chat['lastMessage'],
+                                          time: chat['time'],
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (context) => ChatPage(
+                                                      name: chat['name'],
+                                                      avatar: chat['avatar'],
+                                                      chatroomId:
+                                                          chat['chatroomId'] ??
+                                                          'default_chatroom',
+                                                      myLanguage:
+                                                          chat['myLanguage'],
+                                                      otherLanguage:
+                                                          chat['otherLanguage'],
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                      separatorBuilder:
+                                          (context, index) =>
+                                              const SizedBox(height: 10),
                                     ),
-                                  );
-                                },
-                              );
-                            },
-                            separatorBuilder:
-                                (context, index) => const SizedBox(height: 10),
                           ),
                         ),
                       ],

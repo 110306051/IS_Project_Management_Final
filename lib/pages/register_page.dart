@@ -16,8 +16,12 @@ class _RegisterPageState extends State<RegisterPage> {
   String? _selectedIdentity;
   bool _loading = false;
 
-  static const List<String> languages = ['繁體中文', '英文', '印尼文'];
-  static const List<String> identities = ['台灣', '印尼'];
+  static const List<String> languages = [
+    'Traditional Chinese',
+    'English',
+    'Indonesian',
+  ];
+  static const List<String> identities = ['Taiwan', 'Indonesia'];
 
   Future<void> _onRegisterPressed() async {
     final username = _usernameCtrl.text.trim();
@@ -25,26 +29,42 @@ class _RegisterPageState extends State<RegisterPage> {
     final language = _selectedLanguage;
     final identity = _selectedIdentity;
 
-    if (username.isEmpty || password.isEmpty || language == null || identity == null) {
+    if (username.isEmpty ||
+        password.isEmpty ||
+        language == null ||
+        identity == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請填寫所有欄位，包括使用者名稱、密碼、語言和身分')),
+        const SnackBar(
+          content: Text(
+            'Please fill in all fields, including username, password, language, and identity.',
+          ),
+        ),
       );
       return;
     }
 
-    setState(() { _loading = true; });
-    final success = await ApiService.register(username, password, language, identity);
-    setState(() { _loading = false; });
+    setState(() {
+      _loading = true;
+    });
+    final success = await ApiService.register(
+      username,
+      password,
+      language,
+      identity,
+    );
+    setState(() {
+      _loading = false;
+    });
 
     if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('註冊失敗，請稍後再試')),
+        const SnackBar(content: Text('Registration failed. Please try again.')),
       );
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('註冊成功，請登入')),
+      const SnackBar(content: Text('Registration successful! Please log in.')),
     );
     Navigator.pushReplacementNamed(context, '/login');
   }
@@ -59,7 +79,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('註冊')),
+      appBar: AppBar(title: const Text('Register')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -68,7 +88,7 @@ class _RegisterPageState extends State<RegisterPage> {
             TextField(
               controller: _usernameCtrl,
               decoration: const InputDecoration(
-                labelText: '使用者名稱',
+                labelText: 'Username',
                 prefixIcon: Icon(Icons.person),
               ),
             ),
@@ -76,7 +96,7 @@ class _RegisterPageState extends State<RegisterPage> {
             TextField(
               controller: _pwdCtrl,
               decoration: const InputDecoration(
-                labelText: '密碼',
+                labelText: 'Password',
                 prefixIcon: Icon(Icons.lock),
               ),
               obscureText: true,
@@ -84,45 +104,49 @@ class _RegisterPageState extends State<RegisterPage> {
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               decoration: const InputDecoration(
-                labelText: '語言',
+                labelText: 'Language',
                 prefixIcon: Icon(Icons.language),
               ),
               value: _selectedLanguage,
-              items: languages.map((lang) => DropdownMenuItem(
-                value: lang,
-                child: Text(lang),
-              )).toList(),
+              items:
+                  languages
+                      .map(
+                        (lang) =>
+                            DropdownMenuItem(value: lang, child: Text(lang)),
+                      )
+                      .toList(),
               onChanged: (val) => setState(() => _selectedLanguage = val),
-              hint: const Text('選擇語言'),
+              hint: const Text('Select Language'),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               decoration: const InputDecoration(
-                labelText: '身分',
+                labelText: 'Identity',
                 prefixIcon: Icon(Icons.badge),
               ),
               value: _selectedIdentity,
-              items: identities.map((id) => DropdownMenuItem(
-                value: id,
-                child: Text(id),
-              )).toList(),
+              items:
+                  identities
+                      .map((id) => DropdownMenuItem(value: id, child: Text(id)))
+                      .toList(),
               onChanged: (val) => setState(() => _selectedIdentity = val),
-              hint: const Text('選擇身分'),
+              hint: const Text('Select Identity'),
             ),
             const SizedBox(height: 32),
             _loading
                 ? const CircularProgressIndicator()
                 : SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _onRegisterPressed,
-                      child: const Text('註冊'),
-                    ),
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _onRegisterPressed,
+                    child: const Text('Register'),
                   ),
+                ),
             const SizedBox(height: 12),
             TextButton(
-              onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-              child: const Text('已有帳號？前往登入'),
+              onPressed:
+                  () => Navigator.pushReplacementNamed(context, '/login'),
+              child: const Text('Have an account? Login here'),
             ),
           ],
         ),
